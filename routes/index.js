@@ -6,18 +6,28 @@ router.get('/', function (req, res, next) {
   res.render('index', { title: 'Express' });
 });
 router.get('/webhook', function (req, res, next) {
+  if (req.query['hub.mode'] === 'subscribe' &&
+      req.query['hub.verify_token'] === "el_peri") {
+    console.log("Validating webhook");
+    res.status(200).send(req.query['hub.challenge']);
+  } else {
+    console.error("Failed validation. Make sure the validation tokens match.");
+    res.sendStatus(403);          
+  } 
+});
+app.post('/webhook', function (req, res) {
   var data = req.body;
 
   // Make sure this is a page subscription
   if (data.object === 'page') {
 
     // Iterate over each entry - there may be multiple if batched
-    data.entry.forEach(function (entry) {
+    data.entry.forEach(function(entry) {
       var pageID = entry.id;
       var timeOfEvent = entry.time;
 
       // Iterate over each messaging event
-      entry.messaging.forEach(function (event) {
+      entry.messaging.forEach(function(event) {
         if (event.message) {
           receivedMessage(event);
         } else {
@@ -33,7 +43,7 @@ router.get('/webhook', function (req, res, next) {
     // will time out and we will keep trying to resend.
     res.sendStatus(200);
   }
-});
+}); 
 function receivedMessage(event) {
   // Putting a stub for now, we'll expand it in the following steps
   var senderID = event.sender.id;
